@@ -68,7 +68,7 @@ def search_travel(
 		flight_response = requests.get(FLIGHT_SEARCH_URL, headers=headers, params=flight_params)
 		flight_response.raise_for_status()
 		flights = flight_response.json()
-	except request.RequestException as e:
+	except requests.RequestException as e:
 		logging.error(f"Error fetching flight details: {e}")
 		raise HTTPException(status_code=500, detail="Failed to fetch flight data")
 

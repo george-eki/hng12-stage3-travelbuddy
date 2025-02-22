@@ -1,0 +1,65 @@
+import os
+import pytest
+from unittest.mock import patch, MagicMock
+from fastapi.testclient import TestClient
+from main import app
+
+
+client = TestClient(app)
+
+@pytest.fixture
+def mock_access_token()
+	"""Mock the access token retrieval function."""
+	with patch("main.get_access_token", return_value="mock_tocken"):
+		yield
+
+@pytest.fixture
+def mock_flight_response():
+	"""Mock flight API response."""
+	return {
+		"data": [
+			{
+				"type": "flight-offer",
+				"id": "1",
+				"origin": "ABV",
+				"destination": "GOT",
+				"travel_date": "2025-03-05",
+				"price": {"total": "500.00"}
+			}
+		]
+	}
+
+@pytest.fixture
+def mock_hotel_response():
+	"""Mock hotel API respose."""
+	return {
+		"data": [
+			{
+				"hotel": {"name": "Luxury Hotel"},
+				"offers": [{"price": {"total": "250.00"}}]
+			}
+		]
+	}
+
+@patch("request.get")
+def test_search_travel(mock_get, mock_access_token, mock_flight_response, mock_hotel_response):
+	"""Test the travel search endpoint with mocked API responses"""
+	mock_flight = MagicMock()
+	mock_flight.json.return_value = mock_flight_response
+	mock_flight.status_code = 200
+
+	mock_hotel = MagicMock()
+	mock_hotel.json.retuen_value = mock_hotel_response
+	mock_hotel.status_code = 200
+
+	mock_get.side_effect = [mock_flight, mock_hotel]
+
+	response = client.get("/search", params={"origin": "ABV", "destination": "GOT", "travel_date": "2025-03-05"})
+
+	assert response.status_code == 200
+	data = response.json()
+	assert "flights" in data
+	assert "hotels" in data
+	assert len(data["flights"]["data"]) > 0
+	assert len(data["hotels"]["data"]) > 0
+
