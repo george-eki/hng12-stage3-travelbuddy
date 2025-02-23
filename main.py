@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI, Query, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 import os
 import requests
@@ -90,3 +90,107 @@ def search_travel(
 @app.get("/health")
 def health_check():
 	return {"status": "ok"}
+
+@app.get("/integration.json")
+def get_integration_json():
+    """Serve the integration.json file for Telex integration."""
+    integration_data = {
+        "data": {
+            "date": {
+                "created_at": "2025-02-22",
+                "updated_at": "2025-02-22"
+            },
+            "descriptions": {
+                "app_description": "This integration fetches flight and hotel information for a given destination and posts updates in a Telex channel.",
+                "app_logo": "https://iili.io/GWj9u1.jpg",
+                "app_name": "Travel Buddy",
+                "app_url": "https://hng12-stage3-travelbuddy.onrender.com",
+                "background_color": "#3498db"
+            },
+            "integration_category": "CRM & Customer Support",
+            "integration_type": "interval",
+            "is_active": True,
+            "output": [
+                {"label": "output_channel_1", "value": True},
+                {"label": "output_channel_2", "value": False}
+            ],
+            "key_features": [
+                "Fetches real-time flight offers.",
+                "Retrieves available hotel deals.",
+                "Automatically posts updates to a Telex channel.",
+                "Runs on a set interval."
+            ],
+            "permissions": {
+                "monitoring_user": {
+                    "always_online": True,
+                    "display_name": "Travel Monitor Bot"
+                }
+            },
+            "settings": [
+                {
+                    "label": "interval",
+                    "type": "text",
+                    "required": True,
+                    "default": "0 * * * *"  # Runs every hour
+                },
+                {
+                    "label": "Origin Airport (IATA Code)",
+                    "type": "text",
+                    "required": True,
+                    "default": "JFK"
+                },
+                {
+                    "label": "Destination Airport (IATA Code)",
+                    "type": "text",
+                    "required": True,
+                    "default": "LHR"
+                },
+                {
+                    "label": "Travel Date (YYYY-MM-DD)",
+                    "type": "text",
+                    "required": True,
+                    "default": "2025-03-01"
+                },
+                {
+                    "label": "Enable Notifications",
+                    "type": "checkbox",
+                    "required": True,
+                    "default": "Yes"
+                },
+            "tick_url": "https://hng12-stage3-travelbuddy.onrender.com/trigger",
+            "target_url": "https://hng12-stage3-travelbuddy.onrender.com/search"
+        }
+    }
+    return JSONResponse(content=integration_data)
+
+@app.post("/trigger")
+async def trigger_integration(request: Request):
+    """Telex calls this endpoint at set intervals, sending user settings."""
+    try:
+        payload = await request.json()
+        settings = payload.get("settings", {})
+
+        # Extract user-configured values
+        origin = settings.get("Origin Airport (IATA Code)", "JFK")
+        destination = settings.get("Destination Airport (IATA Code)", "LHR")
+        travel_date = settings.get("Travel Date (YYYY-MM-DD)", "2025-03-01")
+
+        # Log received data
+        logging.info(f"Triggered with: {origin} → {destination} on {travel_date}")
+
+        # Call the search endpoint with user settings
+        search_url = f"{request.base_url}search"
+        search_params = {
+            "origin": origin,
+            "destination": destination,
+            "travel_date": travel_date
+        }
+        search_response = requests.get(search_url, params=search_params)
+        search_response.raise_for_status()
+
+        # Return the search results to Telex
+        return search_response.json()
+
+    except Exception as e:
+        logging.error(f"Error processing Telex trigger: {e}")
+        raise HTTPException(status_code=500, detail="Failed to process Telex request")
