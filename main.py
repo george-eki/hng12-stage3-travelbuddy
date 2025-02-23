@@ -157,8 +157,8 @@ def get_integration_json():
                     "required": True,
                     "default": "Yes"
                 },
-            "tick_url": "https://hng12-stage3-travelbuddy.onrender.com/trigger",
-            "target_url": "https://hng12-stage3-travelbuddy.onrender.com/search"
+            "tick_url" = "https://hng12-stage3-travelbuddy.onrender.com/trigger",
+            "target_url" = "https://hng12-stage3-travelbuddy.onrender.com/search"
 	    ]
 	}
     }
