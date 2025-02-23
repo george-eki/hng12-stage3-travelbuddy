@@ -159,7 +159,7 @@ def get_integration_json():
                 },
             "tick_url": "https://hng12-stage3-travelbuddy.onrender.com/trigger",
             "target_url": "https://hng12-stage3-travelbuddy.onrender.com/search"
-        	}
+	    ]
 	]
     return JSONResponse(content=integration_data)
 
